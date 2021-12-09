@@ -25,7 +25,7 @@ public class FalseSchema implements SchemaInternal {
     return FalseSchemaHolder.INSTANCE;
   }
 
-  MutableStateValidator parent;
+  final MutableStateValidator parent;
 
   public FalseSchema(MutableStateValidator parent) {
     this.parent = parent;
@@ -43,12 +43,12 @@ public class FalseSchema implements SchemaInternal {
 
   @Override
   public void validateSync(Object in) throws ValidationException, NoSyncValidationException {
-    throw ValidationException.createException("False schema always fail validation", null, in);
+    throw ValidationException.create("False schema always fail validation", null, in);
   }
 
   @Override
   public Future<Void> validateAsync(Object in) {
-    return Future.failedFuture(ValidationException.createException("False schema always fail validation", null, in));
+    return Future.failedFuture(ValidationException.create("False schema always fail validation", null, in));
   }
 
   @Override

@@ -15,30 +15,28 @@
   ~  You may elect to redistribute this code under either of these licenses.
   --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.vertx</groupId>
-        <artifactId>vertx-ext-parent</artifactId>
-        <version>38</version>
-    </parent>
+  <parent>
+    <groupId>io.vertx</groupId>
+    <artifactId>vertx-ext-parent</artifactId>
+    <version>38</version>
+  </parent>
 
-    <artifactId>vertx-json-schema</artifactId>
-    <version>4.0.3-patch</version>
+  <artifactId>vertx-json-schema</artifactId>
+  <version>4.2.1-patch</version>
 
-    <name>Vert.x JSON Schema Patched</name>
-
-    <distributionManagement>
-        <repository>
-            <id>cogia-artifactory</id>
-            <name>cogia artifactory-releases</name>
-            <url>https://artifactory.cogia.de/artifactory/libs-release-local</url>
-        </repository>
-    </distributionManagement>
+  <name>Vert.x JSON Schema Patched</name>
+  <distributionManagement>
+    <repository>
+      <id>cogia-artifactory</id>
+      <name>cogia artifactory-releases</name>
+      <url>https://artifactory.cogia.de/artifactory/libs-release-local</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
-    <stack.version>4.0.3</stack.version>
-    <junit5.version>5.7.0</junit5.version>
+    <stack.version>4.2.1</stack.version>
     <mockito.version>3.3.0</mockito.version>
     <assertj.version>3.15.0</assertj.version>
     <doc.skip>false</doc.skip>
@@ -77,18 +75,6 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-junit5</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <version>${junit5.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
-      <version>${junit5.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

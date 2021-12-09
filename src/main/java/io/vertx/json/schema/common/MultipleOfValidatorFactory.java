@@ -34,7 +34,7 @@ public class MultipleOfValidatorFactory implements ValidatorFactory {
     return schema.containsKey("multipleOf");
   }
 
-  class MultipleOfValidator extends BaseSyncValidator {
+  static class MultipleOfValidator extends BaseSyncValidator {
     private final double multipleOf;
 
     public MultipleOfValidator(double multipleOf) {
@@ -45,7 +45,7 @@ public class MultipleOfValidatorFactory implements ValidatorFactory {
     public void validateSync(ValidatorContext context, Object in) throws ValidationException {
       if (in instanceof Number) {
         if (((Number) in).doubleValue() % multipleOf != 0) {
-          throw ValidationException.createException("provided number should be multiple of " + multipleOf, "multipleOf", in);
+          throw ValidationException.create("provided number should be multiple of " + multipleOf, "multipleOf", in);
         }
       }
     }
