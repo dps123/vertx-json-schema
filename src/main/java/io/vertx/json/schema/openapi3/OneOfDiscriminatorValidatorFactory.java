@@ -12,7 +12,6 @@ package io.vertx.json.schema.openapi3;
 
 import io.vertx.json.schema.common.*;
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.pointer.JsonPointer;
 import io.vertx.json.schema.NoSyncValidationException;
@@ -21,7 +20,6 @@ import io.vertx.json.schema.ValidationException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import static io.vertx.json.schema.ValidationException.createException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +51,7 @@ public class OneOfDiscriminatorValidatorFactory extends BaseCombinatorsValidator
     return "oneOf";
   }
 
-  class OneOfValidator extends BaseCombinatorsValidator {
+  static class OneOfValidator extends BaseCombinatorsValidator {
 
     private String propertyName;
     private Map<String, String> mapping;
@@ -90,8 +88,8 @@ public class OneOfDiscriminatorValidatorFactory extends BaseCombinatorsValidator
     public void validateSync(ValidatorContext context, Object in) throws ValidationException, NoSyncValidationException {
       this.checkSync();
       long validCount = Arrays.stream(schemas).filter(s -> checkDiscriminator(s, in)).map(s -> isValidSync(s, context, in)).filter(b -> b.equals(true)).count();
-      if (validCount > 1) throw createException("More than one schema valid", "oneOf", in);
-      else if (validCount == 0) throw createException("No schema matches", "oneOf", in);
+      if (validCount > 1) throw ValidationException.create("More than one schema valid", "oneOf", in);
+      else if (validCount == 0) throw ValidationException.create("No schema matches", "oneOf", in);
     }
 
     @Override
@@ -99,21 +97,24 @@ public class OneOfDiscriminatorValidatorFactory extends BaseCombinatorsValidator
       if (isSync()) return validateSyncAsAsync(context, in);
       List<Future<Void>> futures = Arrays.stream(schemas).filter(s -> checkDiscriminator(s, in)).map(s -> s.validateAsync(context, in)).collect(Collectors.toList());
       if (futures.isEmpty()) {
-        return Future.failedFuture(createException("No schema matches", "oneOf", in));
+        return Future.failedFuture(ValidationException.create("No schema matches", "oneOf", in));
       } else {
-        return FutureUtils.oneOf(futures).recover(err -> Future.failedFuture(createException("No schema matches", "oneOf", in, err)));
+        return FutureUtils.oneOf(futures).recover(err -> Future.failedFuture(ValidationException.create("No schema matches", "oneOf", in, err)));
       }
     }
 
     private boolean checkDiscriminator(SchemaInternal schema, Object in) {
-      if (propertyName != null) {
-        if (in instanceof JsonObject) {
-          String discriminator = ((JsonObject) in).getString(propertyName);
+      if (propertyName != null && JsonUtil.isObject(in)) {
+          String discriminator;
+          if (in instanceof Map) {
+            discriminator = (String)((Map) in).get(propertyName);
+          } else {
+            discriminator = ((JsonObject) in).getString(propertyName);
+          }
           if (mapping != null) discriminator = mapping.get(discriminator);
 
           String schemaName = schemaNameMap.get(schema);
           return schemaName!=null && discriminator != null && (discriminator.equals(schemaName) || schemaName.endsWith("/"+discriminator));
-        }
       }
       return true;
     }
