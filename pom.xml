@@ -24,7 +24,7 @@
   </parent>
 
   <artifactId>vertx-json-schema</artifactId>
-  <version>4.2.3-patch</version>
+  <version>4.3.1-patch</version>
 
   <name>Vert.x JSON Schema Patched</name>
   <distributionManagement>
@@ -36,7 +36,7 @@
   </distributionManagement>
 
   <properties>
-    <stack.version>4.2.3</stack.version>
+    <stack.version>4.3.1</stack.version>
     <mockito.version>3.3.0</mockito.version>
     <assertj.version>3.15.0</assertj.version>
     <doc.skip>false</doc.skip>
