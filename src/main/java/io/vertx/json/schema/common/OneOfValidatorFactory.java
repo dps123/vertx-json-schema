@@ -20,12 +20,12 @@ import java.util.stream.Collectors;
 public class OneOfValidatorFactory extends BaseCombinatorsValidatorFactory {
 
   @Override
-  BaseCombinatorsValidator instantiate(MutableStateValidator parent) {
+  protected BaseCombinatorsValidator instantiate(MutableStateValidator parent) {
     return new OneOfValidator(parent);
   }
 
   @Override
-  String getKeyword() {
+  protected String getKeyword() {
     return "oneOf";
   }
 
