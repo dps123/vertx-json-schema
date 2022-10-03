@@ -113,7 +113,6 @@ public class OneOfDiscriminatorValidatorFactory extends BaseCombinatorsValidator
         } else {
           discriminator = ((JsonObject) in).getString(propertyName);
         }
-        String discriminator = ((JsonObject) in).getString(propertyName);
         if (mapping != null) discriminator = mapping.get(discriminator);
 
         String schemaName = schemaNameMap.get(schema);
