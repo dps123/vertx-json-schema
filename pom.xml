@@ -24,9 +24,16 @@
   </parent>
 
   <artifactId>vertx-json-schema</artifactId>
-  <version>4.3.4</version>
+  <version>4.3.4-patch</version>
 
   <name>Vert.x JSON Schema</name>
+  <distributionManagement>
+    <repository>
+      <id>cogia-artifactory</id>
+      <name>cogia artifactory-releases</name>
+      <url>https://artifactory.cogia.de/artifactory/libs-release-local</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <stack.version>4.3.4</stack.version>
