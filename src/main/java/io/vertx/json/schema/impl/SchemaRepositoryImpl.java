@@ -6,6 +6,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.json.schema.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SchemaRepositoryImpl implements SchemaRepository {
 
@@ -65,15 +66,15 @@ public class SchemaRepositoryImpl implements SchemaRepository {
     "else"
   );
 
-  static final List<String> DRAFT_4_META_FILES = Arrays.asList(
+  public static final List<String> DRAFT_4_META_FILES = Collections.singletonList(
     "http://json-schema.org/draft-04/schema"
   );
 
-  static final List<String> DRAFT_7_META_FILES = Arrays.asList(
+  public static final List<String> DRAFT_7_META_FILES = Collections.singletonList(
     "http://json-schema.org/draft-07/schema"
   );
 
-  static final List<String> DRAFT_201909_META_FILES = Arrays.asList(
+  public static final List<String> DRAFT_201909_META_FILES = Arrays.asList(
     "https://json-schema.org/draft/2019-09/schema",
     "https://json-schema.org/draft/2019-09/meta/core",
     "https://json-schema.org/draft/2019-09/meta/applicator",
@@ -83,7 +84,7 @@ public class SchemaRepositoryImpl implements SchemaRepository {
     "https://json-schema.org/draft/2019-09/meta/content"
     );
 
-  static final List<String> DRAFT_202012_META_FILES = Arrays.asList(
+  public static final List<String> DRAFT_202012_META_FILES = Arrays.asList(
     "https://json-schema.org/draft/2020-12/schema",
     "https://json-schema.org/draft/2020-12/meta/core",
     "https://json-schema.org/draft/2020-12/meta/applicator",
@@ -94,15 +95,18 @@ public class SchemaRepositoryImpl implements SchemaRepository {
     "https://json-schema.org/draft/2020-12/meta/unevaluated"
   );
 
-  private final Map<String, JsonSchema> lookup = new HashMap<>();
+  private final Map<String, JsonSchema> lookup = new ConcurrentHashMap<>();
 
   private final JsonSchemaOptions options;
   private final URL baseUri;
+  private final JsonFormatValidator formatValidator;
 
-  public SchemaRepositoryImpl(JsonSchemaOptions options) {
-    this.options = options;
+  public SchemaRepositoryImpl(JsonSchemaOptions options, JsonFormatValidator formatValidator) {
     Objects.requireNonNull(options, "'options' cannot be null");
     Objects.requireNonNull(options.getBaseUri(), "'options.baseUri' cannot be null");
+    Objects.requireNonNull(formatValidator, "'formatValidator' cannot be null");
+    this.options = options;
+    this.formatValidator = formatValidator;
     this.baseUri = new URL(options.getBaseUri());
   }
 
@@ -157,11 +161,27 @@ public class SchemaRepositoryImpl implements SchemaRepository {
 
   @Override
   public Validator validator(JsonSchema schema) {
-    return new SchemaValidatorImpl(schema, options, Collections.unmodifiableMap(lookup));
+    Objects.requireNonNull(schema, "'schema' cannot be null");
+    // this schema has been dereferenced, no need to redo it
+    if (schema.containsKey("__absolute_uri__")) {
+      // resolve the pointer to an absolute path
+      final URL url = new URL(schema.get("__absolute_uri__"), baseUri);
+      if ("".equals(url.fragment())) {
+        url.anchor(""); // normalize hash https://url.spec.whatwg.org/#dom-url-hash
+      }
+      final String uri = url.href();
+      if (lookup.containsKey(uri)) {
+        Objects.requireNonNull(uri, "'ref' cannot be null");
+        return new SchemaValidatorImpl(lookup.get(uri), options, Collections.unmodifiableMap(lookup), false,
+          formatValidator);
+      }
+    }
+    return new SchemaValidatorImpl(schema, options, Collections.unmodifiableMap(lookup), false, formatValidator);
   }
 
   @Override
   public Validator validator(String ref) {
+    Objects.requireNonNull(ref, "'ref' cannot be null");
     // resolve the pointer to an absolute path
     final URL url = new URL(ref, baseUri);
     if ("".equals(url.fragment())) {
@@ -169,22 +189,24 @@ public class SchemaRepositoryImpl implements SchemaRepository {
     }
     final String uri = url.href();
     if (lookup.containsKey(uri)) {
-      return new SchemaValidatorImpl(uri, options, Collections.unmodifiableMap(lookup));
+      return new SchemaValidatorImpl(lookup.get(uri), options, Collections.unmodifiableMap(lookup), false,
+        formatValidator);
     }
     throw new IllegalArgumentException("Unknown $ref: " + ref);
   }
 
   @Override
-  public Validator validator(JsonSchema schema, JsonSchemaOptions options) {
+  public Validator validator(JsonSchema schema, JsonSchemaOptions options, boolean dereference) {
     final JsonSchemaOptions config;
     if (options.getBaseUri() == null) {
       // add the default base if missing
       config = new JsonSchemaOptions(options)
-        .setBaseUri(options.getBaseUri());
+        .setBaseUri(baseUri.href());
     } else {
       config = options;
     }
-    return new SchemaValidatorImpl(schema, config, Collections.unmodifiableMap(lookup));
+
+    return new SchemaValidatorImpl(schema, config, Collections.unmodifiableMap(lookup), dereference, formatValidator);
   }
 
   @Override
@@ -193,7 +215,7 @@ public class SchemaRepositoryImpl implements SchemaRepository {
     if (options.getBaseUri() == null) {
       // add the default base if missing
       config = new JsonSchemaOptions(options)
-        .setBaseUri(options.getBaseUri());
+        .setBaseUri(baseUri.href());
     } else {
       config = options;
     }
@@ -205,33 +227,18 @@ public class SchemaRepositoryImpl implements SchemaRepository {
       url.anchor(""); // normalize hash https://url.spec.whatwg.org/#dom-url-hash
     }
     if (lookup.containsKey(uri)) {
-      return new SchemaValidatorImpl(uri, config, Collections.unmodifiableMap(lookup));
+      Objects.requireNonNull(uri, "'ref' cannot be null");
+      return new SchemaValidatorImpl(lookup.get(uri), config, Collections.unmodifiableMap(lookup), false,
+        formatValidator);
     }
     throw new IllegalArgumentException("Unknown $ref: " + ref);
   }
 
   @Override
-  public JsonObject resolve(JsonSchema schema) {
+  public JsonObject resolve(JsonObject schema) {
     // this will perform a dereference of the given schema
     final Map<String, JsonSchema> lookup = new HashMap<>(Collections.unmodifiableMap(this.lookup));
-    // the deference will ensure that there are no cyclic references
-    // and the given schema is valid to resolved if needed
-    dereference(lookup, schema, baseUri, "", true);
-    return Ref.resolve(lookup, baseUri, schema);
-  }
-
-  @Override
-  public JsonObject resolve(String ref) {
-    // resolve the pointer to an absolute path
-    final URL url = new URL(ref, baseUri);
-    if ("".equals(url.fragment())) {
-      url.anchor(""); // normalize hash https://url.spec.whatwg.org/#dom-url-hash
-    }
-    final String uri = url.href();
-    if (lookup.containsKey(uri)) {
-      return Ref.resolve(Collections.unmodifiableMap(lookup), baseUri, lookup.get(uri));
-    }
-    throw new IllegalArgumentException("Unknown $ref: " + ref);
+    return JsonRef.resolve(schema, lookup);
   }
 
   @Override
@@ -304,11 +311,24 @@ public class SchemaRepositoryImpl implements SchemaRepository {
       schema.annotate("__absolute_recursive_ref__", url.href());
     }
 
+    // if an $dynamicAnchor is found, compute it's URI and add it to the mapping.
+    if (schema.containsKey("$dynamicAnchor")) {
+      final URL url = new URL("#" + schema.<String>get("$dynamicAnchor"), baseURI.href());
+      if (lookup.containsKey(url.href())) {
+        assert !lookup.get(url.href()).equals(schema);
+      } else {
+        lookup.put(url.href(), schema);
+      }
+    }
+
     // if an $anchor is found, compute it's URI and add it to the mapping.
     if (schema.containsKey("$anchor")) {
       final URL url = new URL("#" + schema.<String>get("$anchor"), baseURI);
-      assert !lookup.containsKey(url.href());
-      lookup.put(url.href(), schema);
+      if (lookup.containsKey(url.href())) {
+        assert !lookup.get(url.href()).equals(schema);
+      } else {
+        lookup.put(url.href(), schema);
+      }
     }
 
     // process subschemas.

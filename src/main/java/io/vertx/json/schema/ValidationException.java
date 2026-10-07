@@ -26,7 +26,6 @@ public abstract class ValidationException extends VertxException {
 
   final private String keyword;
   final private Object input;
-  protected Schema schema;
   protected JsonPointer inputScope;
 
   protected ValidationException(String message, String keyword, Object input) {
@@ -47,30 +46,6 @@ public abstract class ValidationException extends VertxException {
     super(message, cause, noStackTrace);
     this.keyword = keyword;
     this.input = input;
-  }
-
-  /**
-   * @deprecated just use {@link #create(String, String, Object, Collection)}
-   */
-  @Deprecated
-  public static ValidationException createException(String message, String keyword, Object input, Collection<Throwable> causes) {
-    return new ValidationExceptionImpl(message, causes, keyword, input);
-  }
-
-  /**
-   * @deprecated just use {@link #create(String, String, Object, Throwable)}
-   */
-  @Deprecated
-  public static ValidationException createException(String message, String keyword, Object input, Throwable cause) {
-    return new ValidationExceptionImpl(message, cause, keyword, input);
-  }
-
-  /**
-   * @deprecated just use {@link #create(String, String, Object)}
-   */
-  @Deprecated
-  public static ValidationException createException(String message, String keyword, Object input) {
-    return new ValidationExceptionImpl(message, keyword, input);
   }
 
   public static ValidationException create(String message, String keyword, Object input, Collection<Throwable> causes) {
@@ -101,22 +76,6 @@ public abstract class ValidationException extends VertxException {
   }
 
   /**
-   * @return the schema that failed the validation
-   */
-  public Schema schema() {
-    return schema;
-  }
-
-  /**
-   * @return the scope of the schema that failed the validation
-   * @deprecated use {@link #schema()} and then {@link Schema#getScope()} instead
-   */
-  @Deprecated
-  public JsonPointer scope() {
-    return this.schema.getScope();
-  }
-
-  /**
    * @return the scope of the input, where the validation failed.
    */
   public JsonPointer inputScope() {
@@ -129,7 +88,6 @@ public abstract class ValidationException extends VertxException {
       "message='" + getMessage() + '\'' +
       ", keyword='" + keyword + '\'' +
       ", input=" + input +
-      ", schema=" + schema +
       ((inputScope != null) ? ", inputScope=" + inputScope.toURI() : "") +
       '}';
   }

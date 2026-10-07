@@ -2,10 +2,6 @@ package io.vertx.json.schema;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.impl.JsonUtil;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 
 /**
  * Converter and mapper for {@link io.vertx.json.schema.JsonSchemaOptions}.
@@ -13,11 +9,7 @@ import java.util.Base64;
  */
 public class JsonSchemaOptionsConverter {
 
-
-  private static final Base64.Decoder BASE64_DECODER = JsonUtil.BASE64_DECODER;
-  private static final Base64.Encoder BASE64_ENCODER = JsonUtil.BASE64_ENCODER;
-
-  public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, JsonSchemaOptions obj) {
+   static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, JsonSchemaOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
         case "baseUri":
@@ -39,11 +31,11 @@ public class JsonSchemaOptionsConverter {
     }
   }
 
-  public static void toJson(JsonSchemaOptions obj, JsonObject json) {
+   static void toJson(JsonSchemaOptions obj, JsonObject json) {
     toJson(obj, json.getMap());
   }
 
-  public static void toJson(JsonSchemaOptions obj, java.util.Map<String, Object> json) {
+   static void toJson(JsonSchemaOptions obj, java.util.Map<String, Object> json) {
     if (obj.getBaseUri() != null) {
       json.put("baseUri", obj.getBaseUri());
     }
